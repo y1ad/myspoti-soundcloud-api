@@ -115,4 +115,4 @@ function fail(res, e) {
   return res.status(500).json({ error: 'internal', detail: String((e && e.message) || e) });
 }
 
-module.exports = { API, sc, playable, progressive, origin, guard, fail, HttpError };
+module.exports = { API, UA, get, sc, playable, progressive, origin, guard, fail, HttpError };

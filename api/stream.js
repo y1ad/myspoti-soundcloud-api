@@ -1,7 +1,7 @@
 // GET /api/stream?id=123            -> 302 redirect to the signed MP3 URL (play this URL directly)
 // GET /api/stream?id=123&format=json -> { url, mimeType, durationMs, expiresInMs }
 // The audio never goes through Vercel: only the lookup does.
-const { sc, progressive, guard, fail, HttpError } = require('./_sc');
+const { sc, get, progressive, guard, fail, HttpError } = require('./_sc');
 
 module.exports = async (req, res) => {
   if (!guard(req, res)) return;
@@ -23,7 +23,6 @@ module.exports = async (req, res) => {
 
     const url = t.url + (t.url.indexOf('?') >= 0 ? '&' : '?') +
       new URLSearchParams({ client_id: tr.id, track_authorization: track.track_authorization || '' });
-    const { get } = { get: (u) => fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0' } }) };
     const s = await get(url);
     if (s.status === 429) return res.status(429).json({ error: 'rate_limited' });
     if (!s.ok) return res.status(502).json({ error: 'media_http_' + s.status });
