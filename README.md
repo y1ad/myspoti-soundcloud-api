@@ -1,13 +1,14 @@
 # myspoti-soundcloud-api
 
-Small Vercel API that searches SoundCloud and resolves full, free tracks to a playable MP3 URL.
-No page has to stay open: the app calls this API directly.
+Small Vercel API that searches SoundCloud and resolves full, free tracks to a playable stream URL.
+No page has to stay open: the app/extension calls this API directly.
 
-- `GET /api/search?q=text&offset=0&limit=20` -> `{ items: [{ id, title, artist, uploader, durationMs, artwork, streamUrl }], next }`
-- `GET /api/stream?id=ID` -> 302 to the signed MP3 (use this URL as the player source)
+- `GET /api/search?q=text&offset=0&limit=20` -> `{ items: [{ id, title, artist, uploader, isrc, durationMs, artwork, mimeType, streamUrl }], next }`
+- `GET /api/stream?id=ID` -> 302 to the signed stream (HLS AAC playlist, or MP3 when SoundCloud has one)
 - `GET /api/stream?id=ID&format=json` -> `{ url, mimeType, durationMs, expiresInMs }`
 
-Only full, free tracks with MP3 stream are returned (no previews, no paid-only).
+Only full, free tracks are returned (no previews, no paid-only). SoundCloud now serves most tracks as HLS (AAC) only, so
+the stream is usually an `.m3u8` playlist (`mimeType: application/x-mpegURL`).
 
 ## Optional env vars (Vercel > Settings > Environment Variables)
 

@@ -71,19 +71,32 @@ async function sc(path, params = {}) {
   return { r, id };
 }
 
-function playable(c) {
-  if (!c || c.streamable === false) return false;
-  if (c.policy && c.policy !== 'ALLOW' && c.policy !== 'MONETIZE') return false; // no previews, no paid-only
-  return !!progressive(c);
-}
-
-// The progressive MP3 transcoding (what any audio player can open directly).
+// The progressive MP3 transcoding (any audio player opens it directly). Rare today.
 function progressive(c) {
   const t = (c.media && c.media.transcodings) || [];
   return (
     t.find((x) => x.format && x.format.protocol === 'progressive' && /mpeg|mp3/i.test((x.format.mime_type || '') + ' ' + (x.preset || ''))) ||
     null
   );
+}
+
+// The stream to use: a progressive MP3 when there is one, else the best HLS AAC (160k > 96k).
+function pickStream(c) {
+  const mp3 = progressive(c);
+  if (mp3) return { t: mp3, mime: 'audio/mpeg', kind: 'mp3' };
+  const t = (c.media && c.media.transcodings) || [];
+  const rate = (x) => parseInt(((x.preset || '').match(/(\d+)k/) || [])[1], 10) || 0;
+  const aac = t
+    .filter((x) => x.format && x.format.protocol === 'hls' && /mp4a|aac/i.test((x.format.mime_type || '') + ' ' + (x.preset || '')))
+    .sort((a, b) => rate(b) - rate(a));
+  if (aac.length) return { t: aac[0], mime: 'application/x-mpegURL', kind: 'hls-aac' };
+  return null;
+}
+
+function playable(c) {
+  if (!c || c.streamable === false) return false;
+  if (c.policy && c.policy !== 'ALLOW' && c.policy !== 'MONETIZE') return false; // no previews, no paid-only
+  return !!pickStream(c);
 }
 
 function origin(req) {
@@ -115,4 +128,4 @@ function fail(res, e) {
   return res.status(500).json({ error: 'internal', detail: String((e && e.message) || e) });
 }
 
-module.exports = { API, UA, get, sc, playable, progressive, origin, guard, fail, HttpError };
+module.exports = { API, UA, get, sc, playable, progressive, pickStream, origin, guard, fail, HttpError };
